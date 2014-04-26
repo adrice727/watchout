@@ -1,53 +1,92 @@
 // start slingin' some d3 here.
-//
-// //enter:
 
-//d3.select('div').data([1,2,3]).enter().append("div").text(function(d){return d;});
+var gameOptions = { width: 700, height: 700};
 
-// update:
-//
-
-//d3.selectAll('div').text(function(d){return d;});
-
-// d3.selectAll("li").data(["red", "green", "blue", "purple"]).text(function(d){return d;});
-// d3.selectAll("ul").append("li").enter().text(function(d){return d;});
-// var matrix = [
-//   [11975,  5871, 8916, 2868],
-//   [ 1951, 10048, 2060, 6171],
-//   [ 8010, 16145, 8090, 8045],
-//   [ 1013,   990,  940, 6907]
-// ];
-
-// var tableRows = d3.select("body").append("table").selectAll("tr")
-//     .data(matrix)
-//   .enter().append("tr");
-
-// var td = tableRows.selectAll("td")
-//     .data(function(d) { return d; })
-//   .enter().append("td")
-//     .text(function(d) { return d; });
-
-// var lists =
-// ["red", "green"];
-
-// var ol = d3.select("body").selectAll("ol")
-//             .data(lists).enter().append("ol");
-// var li = ol.selectAll("li")
-//          .data(function(d){return d;})
-//          .enter().append("li").text(function(d){return d;});
-
-// <ol data = "red"></ol>
-//  <li>r</li>
-//  <li data = e>
-//  <li data = d>
-// <ol data = "green"></ol>
-// <ol data = "blue"></ol>
-
-// select(something).data(data).enter().[append, insert, select, call]
+var gameBoard = d3.select('.container').append('svg:svg').attr('width', gameOptions.width).attr('height', gameOptions.height);
 
 
+var rand = function() {
+  return Math.floor(Math.random() * 676) + 12;
+};
 
-d3.select("body").selectAll("div")
-    .data([4, 8, 15, 16, 23, 42])
-  .enter().append("div")
-    .text(function(d) { return d; });
+var drawEnemies = function(){
+  for ( var i = 0; i < 30; i++){
+    gameBoard.append('circle').attr('class', 'enemy')
+                              .attr('cx', rand())
+                              .attr('cy', rand())
+                              .attr('r', 12)
+                              .attr('fill', 'black');
+  }
+};
+
+drawEnemies();
+
+var drag = d3.behavior.drag()
+  .on("drag", function() {
+
+      d3.select(this).attr('cx', keepInBounds(d3.mouse(this)[0]));
+      d3.select(this).attr('cy', keepInBounds(d3.mouse(this)[1]));
+  });
+
+var keepInBounds = function(position){
+  if ( position > 688 ){
+    return 688;
+  }
+  if ( position < 12 ){
+    return 12;
+  }
+  return position;
+};
+
+gameBoard.append('circle').attr('class', 'player')
+                          .attr('cx', 350)
+                          .attr('cy', 350)
+                          .attr('r', 12)
+                          .attr('fill', 'orange')
+                          .call(drag);
+
+
+setInterval(function(){
+  d3.selectAll('.enemy').each(function() {
+    d3.select(this).transition().duration(1500).ease('cubic').attr({'cx': rand(), 'cy': rand()});
+  });
+}, 2000);
+
+var currentScore = 0;
+var highScore = 0;
+var collisions = 0;
+
+var checkForCollision = function(){
+  d3.selectAll('.enemy').each(function() {
+    var playerX = d3.select('.player').attr('cx');
+    var playerY = d3.select('.player').attr('cy');
+
+    var enemyX = d3.select(this).attr('cx');
+    var enemyY = d3.select(this).attr('cy');
+
+
+    if ( Math.abs(playerX - enemyX) < 24 &&
+         Math.abs(playerY - enemyY) < 24) {
+      onCollision();
+    } else {
+      currentScore += 1;
+    }
+  });
+  d3.select('.current-score').text(currentScore);
+};
+
+var onCollision = function() {
+  if (currentScore > highScore) {
+    highScore = currentScore;
+  }
+  collisions++;
+  currentScore = 0;
+  d3.select('.high-score').text(highScore);
+  d3.select('.collision-count').text(collisions);
+}
+
+setInterval(checkForCollision, 100);
+
+
+
+
